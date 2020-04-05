@@ -1,0 +1,25 @@
+.AddServiceForm-form {
+  margin-bottom: 10px;
+}
+
+.AddServiceForm-label {
+  color: #ffffff;
+}
+
+/* Mostly taken from the input styles from space-kit's TextField input*/
+.AddServiceForm-input {
+  background-color: #ffffff;
+  border: solid 1px;
+  border-color: #cad0d8;
+  border-radius: 4px;
+  box-sizing: border-box;
+  -webkit-flex: 1;
+  -ms-flex: 1;
+  flex: 1;
+  height: 28px;
+  font-family: "Source Sans Pro", sans-serif;
+  font-size: 13px;
+  line-height: 1.54;
+  margin: 10px 0;
+  width: 100%;
+}

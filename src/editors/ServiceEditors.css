@@ -1,0 +1,10 @@
+.ServiceEditors-monacoInstance {
+  transition: opacity 1s ease-out;
+  opacity: 0;
+  height: 0;
+  overflow: hidden;
+}
+.ServiceEditors-monacoInstance.is-active {
+  opacity: 1;
+  height: auto;
+}
