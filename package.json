@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@apollo/client": "^3.0.0-beta.41",
     "@apollo/federation": "^0.13.2",
     "@apollo/gateway": "^0.13.2",
     "@apollo/space-kit": "^3.3.0",
@@ -14,6 +15,7 @@
     "@types/node": "^12.12.32",
     "@types/react": "^16.9.27",
     "@types/react-dom": "^16.9.5",
+    "apollo-link-context": "^1.0.19",
     "graphql": "^14.6.0",
     "graphql-tag": "^2.10.3",
     "react": "^16.13.1",
