@@ -16,6 +16,7 @@ const authLink = setContext(function (request, { headers }) {
     headers: {
       ...headers,
       "x-api-key": apiKey,
+      "Access-Control-Allow-Origin": "*",
     },
   };
 });
