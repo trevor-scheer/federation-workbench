@@ -11,12 +11,14 @@ type Props = {
 
 const variantsQuery = gql`
   query TrevorDoingStuff {
-    service(id: "value-types-demo") {
-      createdAt
-      schemaTags {
-        variant {
-          name
-          id
+    me {
+      ... on Service {
+        createdAt
+        schemaTags {
+          variant {
+            name
+            id
+          }
         }
       }
     }
@@ -25,13 +27,15 @@ const variantsQuery = gql`
 
 const partialSdlQuery = gql`
   query Trevor2($graphVariant: String!) {
-    service(id: "value-types-demo") {
-      implementingServices(graphVariant: $graphVariant) {
-        ... on FederatedImplementingServices {
-          services {
-            name
-            activePartialSchema {
-              sdl
+    me {
+      ... on Service {
+        implementingServices(graphVariant: $graphVariant) {
+          ... on FederatedImplementingServices {
+            services {
+              name
+              activePartialSchema {
+                sdl
+              }
             }
           }
         }
@@ -58,7 +62,7 @@ export default function LoadFromAgm({ dispatch }: Props) {
       for (const {
         name,
         activePartialSchema: { sdl },
-      } of sdlResponse.data.service.implementingServices.services) {
+      } of sdlResponse.data.me.implementingServices.services) {
         dispatch({ type: "addService", payload: { name } });
         dispatch({ type: "updateService", payload: { name, value: sdl } });
       }
@@ -88,7 +92,7 @@ export default function LoadFromAgm({ dispatch }: Props) {
           Load from AGM
         </Button>
       </form>
-      {!variantResponse.loading && variantResponse.data?.service && (
+      {!variantResponse.loading && variantResponse.data?.me && (
         <select
           onChange={(e) => {
             console.log("change", e.target.value);
@@ -98,7 +102,7 @@ export default function LoadFromAgm({ dispatch }: Props) {
           }}
         >
           <option value="">select a variant</option>
-          {variantResponse.data.service.schemaTags.map(({ variant }: any) => (
+          {variantResponse.data.me.schemaTags.map(({ variant }: any) => (
             <option value={variant.name} key={variant.id}>
               {variant.name}
             </option>
