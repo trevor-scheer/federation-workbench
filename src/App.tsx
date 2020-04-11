@@ -1,6 +1,7 @@
 import React, { useReducer, Reducer } from "react";
 import gql from "graphql-tag";
 import { GraphQLSchema, GraphQLError } from "graphql";
+import compositionWorkerSource from './utils/composition.worker';
 import {
   composeAndValidate,
   printSchema,
@@ -23,6 +24,7 @@ import "./App.css";
 import { client } from "./client";
 import FileSaver from 'file-saver';
 import SaveAndLoad from "./SaveAndLoad";
+import { LoadWorker } from "./utils/loadWorker";
 
 interface WorkerCompositionResult {
   composition: {
@@ -41,6 +43,7 @@ export type Action =
   | { type: "loadWorkbench"; payload: string | undefined}
   | { type: "didReceiveComposition"; payload: WorkerCompositionResult }
   | { type: "refreshComposition";}
+  | { type: "refreshComposition_";}
   ;
 
 type State = {
@@ -55,6 +58,9 @@ type State = {
   compositionErrors?: GraphQLError[] | undefined;
   compositionBusy: boolean;
 };
+
+
+const compositionWorker = LoadWorker(compositionWorkerSource);
 
 const reducer: Reducer<State, Action> = (state, action): State => {
 
@@ -81,9 +87,15 @@ const reducer: Reducer<State, Action> = (state, action): State => {
       };
     }
     case "didReceiveComposition": {
-      return {...state}
+      console.log("from worker");
+      return {...state, ...action.payload as WorkerCompositionResult}
     }
     case "refreshComposition": {
+      console.log("Refresh composition");
+      compositionWorker.postMessage({services: state.services});
+      return {...state}
+    }
+    case "refreshComposition_": {
       let composition = state.composition;
       let compositionErrors: GraphQLError[] | undefined = undefined;
       try {
@@ -111,32 +123,12 @@ const reducer: Reducer<State, Action> = (state, action): State => {
     case "updateService": {
       // let composition = state.composition;
 
-      const nextState = {
+      return {
         ...state,
         services: {
           ...state.services,
           [action.payload.name]: action.payload.value,
         },
-      };
-
-      // try {
-      //   const sdls = Object.entries(nextState.services).reduce(
-      //     (serviceDefs, [name, typeDefs]) => {
-      //       serviceDefs.push({ name, typeDefs: gql(typeDefs) });
-      //       return serviceDefs;
-      //     },
-      //     [] as ServiceDefinition[]
-      //   );
-      //   const { schema, errors } = composeAndValidate(sdls);
-      //   composition = {
-      //     schema,
-      //     printed: printSchema(schema),
-      //   };
-      // } catch {}
-
-      return {
-        ...nextState,
-        // composition,
       };
     }
     case "updateQuery": {
@@ -200,8 +192,8 @@ const reducer: Reducer<State, Action> = (state, action): State => {
 
 function App() {
   const [
-    { services, selectedService, composition, query, queryPlan },
-    dispatch,
+    appState,
+    dispatch
   ] = useReducer<typeof reducer>(reducer, {
     services: {},
     selectedService: undefined,
@@ -213,6 +205,17 @@ function App() {
     queryPlan: "",
     compositionBusy: false
   });
+
+  // @ts-ignore
+  compositionWorker.addEventListener("message", (e: MessageEvent) => {
+    console.log("got message from worker:", e.data);
+    reducer(appState, {
+      type: "didReceiveComposition",
+      payload: e.data
+    })
+  });
+
+  const { services, selectedService, composition, query, queryPlan } = appState;
 
   return (
     <ApolloProvider client={client}>

@@ -9,8 +9,8 @@ export default () => {
   // eslint-disable-next-line no-restricted-globals
   self.addEventListener("message", 
   // @ts-ignore
-  (_: Window, e: MessageEvent) => {
-      let compositionErrors: GraphQLError[] | undefined = undefined;
+  (e: MessageEvent) => {
+    console.log("inside worker", e);
       try {
         const sdls = Object.entries(e.data.services).reduce(
           (serviceDefs, [name, typeDefs]) => {
@@ -31,7 +31,9 @@ export default () => {
             compositionErrors: errors
           }
         );
-      } catch {}
+      } catch(e) {
+        console.error(e)
+      }
     }
   )
 }
