@@ -1,6 +1,6 @@
 import React, { useReducer, Reducer } from "react";
 import gql from "graphql-tag";
-import { GraphQLSchema } from "graphql";
+import { GraphQLSchema, GraphQLError } from "graphql";
 import {
   composeAndValidate,
   printSchema,
@@ -31,6 +31,7 @@ export type Action =
   | { type: "updateQuery"; payload: string }
   | { type: "saveWorkbench"; payload: string | undefined}
   | { type: "loadWorkbench"; payload: string | undefined}
+  | { type: "refreshComposition";}
   ;
 
 type State = {
@@ -42,6 +43,7 @@ type State = {
   };
   query: string | undefined;
   queryPlan: string;
+  compositionErrors?: GraphQLError[] | undefined
 };
 
 const reducer: Reducer<State, Action> = (state, action): State => {
@@ -66,6 +68,31 @@ const reducer: Reducer<State, Action> = (state, action): State => {
         ...state,
         selectedService: action.payload as string,
       };
+    }
+    case "refreshComposition": {
+      let composition = state.composition;
+      let compositionErrors: GraphQLError[] | undefined = undefined;
+      try {
+      const sdls = Object.entries(state.services).reduce(
+        (serviceDefs, [name, typeDefs]) => {
+          serviceDefs.push({ name, typeDefs: gql(typeDefs) });
+          return serviceDefs;
+        },
+        [] as ServiceDefinition[]
+      );
+      const { schema, errors} = composeAndValidate(sdls);
+      composition = {
+        schema,
+        printed: printSchema(schema),
+      };
+      if (errors && errors.length) compositionErrors = errors;
+    } catch {}
+
+    return {
+      ...state,
+      composition,
+      compositionErrors
+    };
     }
     case "updateService": {
       let composition = state.composition;

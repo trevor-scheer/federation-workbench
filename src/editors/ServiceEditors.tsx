@@ -28,7 +28,7 @@ export default function ServiceEditors({
       type: "updateService",
       payload: { name, value: value || "" },
     });
-  }, 5000);
+  }, 2000);
 
   return (
     <div className="ServiceEditors-editors" style={{ width: "50%" }}>
