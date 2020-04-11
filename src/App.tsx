@@ -39,23 +39,28 @@ type State = {
   queryPlan: string;
 };
 
-const reducer: Reducer<State, Action> = (state, action) => {
+const reducer: Reducer<State, Action> = (state, action): State => {
   switch (action.type) {
     case "addService": {
+      // Exit on blank-ish service name (EMOJIIS WORK, THOUGH 👍)
+      if (action.payload.name.trim().length === 0) return { ...state };
       const selectedService = state.selectedService || action.payload.name;
-      return {
-        ...state,
-        selectedService,
-        services: {
-          ...state.services,
-          [action.payload.name]: "",
-        },
-      };
+      if (action.payload.name.trim() > "") {
+        return {
+          ...state,
+          selectedService,
+          services: {
+            ...state.services,
+            [action.payload.name]: "",
+          },
+        };
+      }
+      
     }
     case "selectService": {
       return {
         ...state,
-        selectedService: action.payload,
+        selectedService: action.payload as string,
       };
     }
     case "updateService": {
