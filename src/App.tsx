@@ -47,6 +47,7 @@ type State = {
 };
 
 const reducer: Reducer<State, Action> = (state, action): State => {
+
   switch (action.type) {
     case "addService": {
       // Exit on blank-ish service name (EMOJIIS WORK, THOUGH 👍)
@@ -95,7 +96,7 @@ const reducer: Reducer<State, Action> = (state, action): State => {
     };
     }
     case "updateService": {
-      let composition = state.composition;
+      // let composition = state.composition;
 
       const nextState = {
         ...state,
@@ -105,24 +106,24 @@ const reducer: Reducer<State, Action> = (state, action): State => {
         },
       };
 
-      try {
-        const sdls = Object.entries(nextState.services).reduce(
-          (serviceDefs, [name, typeDefs]) => {
-            serviceDefs.push({ name, typeDefs: gql(typeDefs) });
-            return serviceDefs;
-          },
-          [] as ServiceDefinition[]
-        );
-        const { schema, errors } = composeAndValidate(sdls);
-        composition = {
-          schema,
-          printed: printSchema(schema),
-        };
-      } catch {}
+      // try {
+      //   const sdls = Object.entries(nextState.services).reduce(
+      //     (serviceDefs, [name, typeDefs]) => {
+      //       serviceDefs.push({ name, typeDefs: gql(typeDefs) });
+      //       return serviceDefs;
+      //     },
+      //     [] as ServiceDefinition[]
+      //   );
+      //   const { schema, errors } = composeAndValidate(sdls);
+      //   composition = {
+      //     schema,
+      //     printed: printSchema(schema),
+      //   };
+      // } catch {}
 
       return {
         ...nextState,
-        composition,
+        // composition,
       };
     }
     case "updateQuery": {

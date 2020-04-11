@@ -28,6 +28,10 @@ export default function ServiceEditors({
       type: "updateService",
       payload: { name, value: value || "" },
     });
+    //TODO: Debounce within Debounce? 🤔
+    dispatch({
+      type: 'refreshComposition'
+    })
   }, 2000);
 
   return (
