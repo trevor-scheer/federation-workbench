@@ -24,6 +24,14 @@ import { client } from "./client";
 import FileSaver from 'file-saver';
 import SaveAndLoad from "./SaveAndLoad";
 
+interface WorkerCompositionResult {
+  composition: {
+    schema: GraphQLSchema | undefined;
+    printed: string;
+  };
+  compositionErrors?: GraphQLError[] | undefined;
+}
+
 export type Action =
   | { type: "addService"; payload: { name: string } }
   | { type: "selectService"; payload: string }
@@ -31,6 +39,7 @@ export type Action =
   | { type: "updateQuery"; payload: string }
   | { type: "saveWorkbench"; payload: string | undefined}
   | { type: "loadWorkbench"; payload: string | undefined}
+  | { type: "didReceiveComposition"; payload: WorkerCompositionResult }
   | { type: "refreshComposition";}
   ;
 
@@ -43,7 +52,8 @@ type State = {
   };
   query: string | undefined;
   queryPlan: string;
-  compositionErrors?: GraphQLError[] | undefined
+  compositionErrors?: GraphQLError[] | undefined;
+  compositionBusy: boolean;
 };
 
 const reducer: Reducer<State, Action> = (state, action): State => {
@@ -69,6 +79,9 @@ const reducer: Reducer<State, Action> = (state, action): State => {
         ...state,
         selectedService: action.payload as string,
       };
+    }
+    case "didReceiveComposition": {
+      return {...state}
     }
     case "refreshComposition": {
       let composition = state.composition;
@@ -198,6 +211,7 @@ function App() {
     },
     query: "",
     queryPlan: "",
+    compositionBusy: false
   });
 
   return (
