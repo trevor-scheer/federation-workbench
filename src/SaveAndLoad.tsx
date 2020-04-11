@@ -23,7 +23,6 @@ export default function SaveAndLoad({ dispatch }: Props) {
         console.log(textString?.toString());
         // Try to load
         dispatch({type: "loadWorkbench", payload: textString});
-        dispatch({type: "selectService", })
     }
     reader.readAsText(file);
     

@@ -21,12 +21,17 @@ import LoadFromAgm from "./LoadFromAgm";
 
 import "./App.css";
 import { client } from "./client";
+import FileSaver from 'file-saver';
+import SaveAndLoad from "./SaveAndLoad";
 
 export type Action =
   | { type: "addService"; payload: { name: string } }
   | { type: "selectService"; payload: string }
   | { type: "updateService"; payload: { name: string; value: string } }
-  | { type: "updateQuery"; payload: string };
+  | { type: "updateQuery"; payload: string }
+  | { type: "saveWorkbench"; payload: string | undefined}
+  | { type: "loadWorkbench"; payload: string | undefined}
+  ;
 
 type State = {
   services: { [name: string]: string };
@@ -55,7 +60,6 @@ const reducer: Reducer<State, Action> = (state, action): State => {
           },
         };
       }
-      
     }
     case "selectService": {
       return {
@@ -121,6 +125,35 @@ const reducer: Reducer<State, Action> = (state, action): State => {
         queryPlan,
       };
     }
+    case "saveWorkbench": {
+      let serializedState = "";
+      try {
+        serializedState = JSON.stringify(state);
+      } catch (e) {
+        alert(`Unable to save Workbench due to ${e}`);
+        console.error(e);
+        return state;
+      }
+      // Okay, we have a serializeable Redux store.
+      const blob = new Blob([serializedState], {type: "text/plain;charset=utf-8"});
+      FileSaver.saveAs(blob, `${(action.payload ? action.payload : "Workbench") + "-" + Date.now()}.federationworkbench`);
+      return {...state};
+    }
+    case "loadWorkbench": {
+      // TODO alert on invalid file
+      if (!action.payload || action.payload.toString().length === 0) return {...state};
+      let hopefullyValidState: State | string = "";
+      try {
+        hopefullyValidState = JSON.parse(action.payload) as State;
+      } catch (e) {
+        alert(`Unable to load Workbench due to ${e}`);
+        console.error(e);
+        return state;
+      }
+      // Okay, we have a serializeable Redux store.
+      
+      return {...hopefullyValidState};
+    }
   }
 };
 
@@ -158,12 +191,16 @@ function App() {
             }}
           >
             <LoadFromAgm dispatch={dispatch} />
+            <hr/>
             <AddServiceForm dispatch={dispatch} />
+            <hr/>
             <ServiceSelectors
               dispatch={dispatch}
               services={services}
               shouldShowComposition={!!composition.printed}
             />
+            <hr/>
+            <SaveAndLoad dispatch={dispatch} />
           </div>
           <ServiceEditors
             selectedService={selectedService}
