@@ -92,6 +92,7 @@ const reducer: Reducer<State, Action> = (state, action) => {
           schema,
           printed: printSchema(schema),
         };
+        // TODO: Handle these in the UI
         if (errors && errors.length) compositionErrors = errors;
       } catch {}
 
