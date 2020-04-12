@@ -1,7 +1,7 @@
 import React, { useReducer, Reducer } from "react";
 import gql from "graphql-tag";
 import { GraphQLSchema, GraphQLError } from "graphql";
-import compositionWorkerSource from './utils/composition.worker';
+import compositionWorkerSource from "./utils/composition.worker";
 import {
   composeAndValidate,
   printSchema,
@@ -22,7 +22,7 @@ import LoadFromAgm from "./LoadFromAgm";
 
 import "./App.css";
 import { client } from "./client";
-import FileSaver from 'file-saver';
+import FileSaver from "file-saver";
 import SaveAndLoad from "./SaveAndLoad";
 import { LoadWorker } from "./utils/loadWorker";
 
@@ -39,12 +39,11 @@ export type Action =
   | { type: "selectService"; payload: string }
   | { type: "updateService"; payload: { name: string; value: string } }
   | { type: "updateQuery"; payload: string }
-  | { type: "saveWorkbench"; payload: string | undefined}
-  | { type: "loadWorkbench"; payload: string | undefined}
+  | { type: "saveWorkbench"; payload: string | undefined }
+  | { type: "loadWorkbench"; payload: string | undefined }
   | { type: "didReceiveComposition"; payload: WorkerCompositionResult }
-  | { type: "refreshComposition";}
-  | { type: "refreshComposition_";}
-  ;
+  | { type: "refreshComposition" }
+  | { type: "refreshComposition_" };
 
 type State = {
   services: { [name: string]: string };
@@ -59,66 +58,62 @@ type State = {
   compositionBusy: boolean;
 };
 
-
 const compositionWorker = LoadWorker(compositionWorkerSource);
 
-const reducer: Reducer<State, Action> = (state, action): State => {
-
+const reducer: Reducer<State, Action> = (state, action) => {
   switch (action.type) {
     case "addService": {
       // Exit on blank-ish service name (EMOJIIS WORK, THOUGH 👍)
-      if (action.payload.name.trim().length === 0) return { ...state };
+      if (action.payload.name.trim().length === 0) return state;
       const selectedService = state.selectedService || action.payload.name;
-      if (action.payload.name.trim() > "") {
         return {
           ...state,
           selectedService,
           services: {
             ...state.services,
-            [action.payload.name]: "",
+            [action.payload.name.trim()]: "",
           },
         };
-      }
     }
     case "selectService": {
       return {
         ...state,
-        selectedService: action.payload as string,
+        selectedService: action.payload,
       };
     }
     case "didReceiveComposition": {
       console.log("from worker");
-      return {...state, ...action.payload as WorkerCompositionResult}
+      return { ...state, ...(action.payload as WorkerCompositionResult) };
     }
     case "refreshComposition": {
       console.log("Refresh composition");
-      compositionWorker.postMessage({services: state.services});
-      return {...state}
+      compositionWorker.postMessage({ services: state.services });
+      return state;
     }
     case "refreshComposition_": {
       let composition = state.composition;
       let compositionErrors: GraphQLError[] | undefined = undefined;
       try {
-      const sdls = Object.entries(state.services).reduce(
-        (serviceDefs, [name, typeDefs]) => {
-          serviceDefs.push({ name, typeDefs: gql(typeDefs) });
-          return serviceDefs;
-        },
-        [] as ServiceDefinition[]
-      );
-      const { schema, errors} = composeAndValidate(sdls);
-      composition = {
-        schema,
-        printed: printSchema(schema),
-      };
-      if (errors && errors.length) compositionErrors = errors;
-    } catch {}
+        const sdls = Object.entries(state.services).reduce(
+          (serviceDefs, [name, typeDefs]) => {
+            serviceDefs.push({ name, typeDefs: gql(typeDefs) });
+            return serviceDefs;
+          },
+          [] as ServiceDefinition[]
+        );
+        const { schema, errors } = composeAndValidate(sdls);
+        composition = {
+          schema,
+          printed: printSchema(schema),
+        };
+        if (errors && errors.length) compositionErrors = errors;
+      } catch {}
 
-    return {
-      ...state,
-      composition,
-      compositionErrors
-    };
+      return {
+        ...state,
+        composition,
+        compositionErrors,
+      };
     }
     case "updateService": {
       // let composition = state.composition;
@@ -168,13 +163,21 @@ const reducer: Reducer<State, Action> = (state, action): State => {
         return state;
       }
       // Okay, we have a serializeable Redux store.
-      const blob = new Blob([serializedState], {type: "text/plain;charset=utf-8"});
-      FileSaver.saveAs(blob, `${(action.payload ? action.payload : "Workbench") + "-" + Date.now()}.federationworkbench`);
-      return {...state};
+      const blob = new Blob([serializedState], {
+        type: "text/plain;charset=utf-8",
+      });
+      FileSaver.saveAs(
+        blob,
+        `${
+          (action.payload ? action.payload : "Workbench") + "-" + Date.now()
+        }.federationworkbench`
+      );
+      return { ...state };
     }
     case "loadWorkbench": {
       // TODO alert on invalid file
-      if (!action.payload || action.payload.toString().length === 0) return {...state};
+      if (!action.payload || action.payload.toString().length === 0)
+        return { ...state };
       let hopefullyValidState: State | string = "";
       try {
         hopefullyValidState = JSON.parse(action.payload) as State;
@@ -184,17 +187,14 @@ const reducer: Reducer<State, Action> = (state, action): State => {
         return state;
       }
       // Okay, we have a serializeable Redux store.
-      
-      return {...hopefullyValidState};
+
+      return { ...state, ...hopefullyValidState };
     }
   }
 };
 
 function App() {
-  const [
-    appState,
-    dispatch
-  ] = useReducer<typeof reducer>(reducer, {
+  const [appState, dispatch] = useReducer<typeof reducer>(reducer, {
     services: {},
     selectedService: undefined,
     composition: {
@@ -203,7 +203,7 @@ function App() {
     },
     query: "",
     queryPlan: "",
-    compositionBusy: false
+    compositionBusy: false,
   });
 
   // @ts-ignore
@@ -211,8 +211,8 @@ function App() {
     console.log("got message from worker:", e.data);
     reducer(appState, {
       type: "didReceiveComposition",
-      payload: e.data
-    })
+      payload: e.data,
+    });
   });
 
   const { services, selectedService, composition, query, queryPlan } = appState;
@@ -236,15 +236,15 @@ function App() {
             }}
           >
             <LoadFromAgm dispatch={dispatch} />
-            <hr/>
+            <hr />
             <AddServiceForm dispatch={dispatch} />
-            <hr/>
+            <hr />
             <ServiceSelectors
               dispatch={dispatch}
               services={services}
               shouldShowComposition={!!composition.printed}
             />
-            <hr/>
+            <hr />
             <SaveAndLoad dispatch={dispatch} />
           </div>
           <ServiceEditors
