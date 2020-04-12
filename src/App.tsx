@@ -1,11 +1,13 @@
-import React, { useReducer, Reducer } from "react";
+import React, { useReducer, Reducer, useEffect } from "react";
 import gql from "graphql-tag";
-import { GraphQLSchema, GraphQLError } from "graphql";
-import compositionWorkerSource from "./utils/composition.worker";
+import { GraphQLSchema, GraphQLError, buildSchema } from "graphql";
+// @ts-ignore
+import CompositionWorker from "worker-loader!./utils/composition.worker";
 import {
   composeAndValidate,
   printSchema,
   ServiceDefinition,
+  buildFederatedSchema,
 } from "@apollo/federation";
 import {
   buildQueryPlan,
@@ -58,7 +60,8 @@ type State = {
   compositionBusy: boolean;
 };
 
-const compositionWorker = LoadWorker(compositionWorkerSource);
+// Worker-related
+const compositionWorker = new CompositionWorker();
 
 const reducer: Reducer<State, Action> = (state, action) => {
   switch (action.type) {
@@ -66,14 +69,14 @@ const reducer: Reducer<State, Action> = (state, action) => {
       // Exit on blank-ish service name (EMOJIIS WORK, THOUGH 👍)
       if (action.payload.name.trim().length === 0) return state;
       const selectedService = state.selectedService || action.payload.name;
-        return {
-          ...state,
-          selectedService,
-          services: {
-            ...state.services,
-            [action.payload.name.trim()]: "",
-          },
-        };
+      return {
+        ...state,
+        selectedService,
+        services: {
+          ...state.services,
+          [action.payload.name.trim()]: "",
+        },
+      };
     }
     case "selectService": {
       return {
@@ -82,13 +85,26 @@ const reducer: Reducer<State, Action> = (state, action) => {
       };
     }
     case "didReceiveComposition": {
-      console.log("from worker");
-      return { ...state, ...(action.payload as WorkerCompositionResult) };
+      console.log("[didReceiveComposition]");
+      const compositionResult = action.payload as WorkerCompositionResult;
+      if (compositionResult.composition.printed) {
+        compositionResult.composition.schema = buildSchema(
+          compositionResult.composition.printed
+        );
+      }
+      
+      console.log("[refreshComposition] <<<<<<< Not Busy");
+      return { ...state, ...compositionResult, compositionBusy: false };
     }
     case "refreshComposition": {
-      console.log("Refresh composition");
+      console.log("[refreshComposition]");
+      if (state.compositionBusy) {
+        console.log("[refreshComposition] >>>>>>>> BUSY");
+        return state;
+      }
       compositionWorker.postMessage({ services: state.services });
-      return state;
+
+      return { ...state, compositionBusy: true };
     }
     case "refreshComposition_": {
       let composition = state.composition;
@@ -206,16 +222,16 @@ function App() {
     compositionBusy: false,
   });
 
-  // @ts-ignore
-  compositionWorker.addEventListener("message", (e: MessageEvent) => {
-    console.log("got message from worker:", e.data);
-    reducer(appState, {
-      type: "didReceiveComposition",
-      payload: e.data,
-    });
-  });
-
   const { services, selectedService, composition, query, queryPlan } = appState;
+
+  useEffect(() => {
+    compositionWorker.addEventListener("message", (e: MessageEvent) => {
+      dispatch({
+        type: "didReceiveComposition",
+        payload: e.data,
+      });
+    });
+  }, []);
 
   return (
     <ApolloProvider client={client}>
@@ -242,7 +258,7 @@ function App() {
             <ServiceSelectors
               dispatch={dispatch}
               services={services}
-              shouldShowComposition={!!composition.printed}
+              shouldShowComposition={!!composition.printed.length}
             />
             <hr />
             <SaveAndLoad dispatch={dispatch} />

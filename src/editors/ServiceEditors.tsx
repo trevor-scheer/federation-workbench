@@ -32,7 +32,7 @@ export default function ServiceEditors({
     dispatch({
       type: 'refreshComposition'
     })
-  }, 2000);
+  }, 500);
 
   return (
     <div className="ServiceEditors-editors" style={{ width: "50%" }}>

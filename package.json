@@ -20,15 +20,16 @@
     "graphql": "^14.6.0",
     "graphql-tag": "^2.10.3",
     "react": "^16.13.1",
+    "react-app-rewire-eslint": "^0.2.3",
     "react-dom": "^16.13.1",
     "react-dropzone": "^10.2.2",
     "react-scripts": "3.4.1",
     "typescript": "^3.8.3"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
+    "start": "react-app-rewired start",
+    "build": "react-app-rewired build",
+    "test": "react-app-rewired test",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
@@ -47,6 +48,9 @@
     ]
   },
   "devDependencies": {
-    "@types/file-saver": "^2.0.1"
+    "@types/file-saver": "^2.0.1",
+    "customize-cra": "^0.9.1",
+    "react-app-rewired": "^2.1.5",
+    "worker-loader": "^2.0.0"
   }
 }
