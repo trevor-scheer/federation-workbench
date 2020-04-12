@@ -66,7 +66,7 @@ export default function LoadFromAgm({ dispatch }: Props) {
       updateApiKey(keyFromStorage);
     }
     sendGraphsQuery();
-  }, []);
+  }, [sendGraphsQuery]);
 
   useEffect(() => {
     if (sdlResponse.data?.service.implementingServices) {
@@ -85,7 +85,7 @@ export default function LoadFromAgm({ dispatch }: Props) {
       });
       dispatch({ type: "refreshComposition" });
     }
-  }, [sdlResponse]);
+  }, [dispatch, sdlResponse]);
 
   return (
     <>

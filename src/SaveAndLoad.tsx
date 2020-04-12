@@ -1,10 +1,4 @@
-import React, {
-  useState,
-  Dispatch,
-  useCallback,
-  FunctionComponent,
-  Component,
-} from "react";
+import React, { useState, Dispatch, useCallback } from "react";
 import { Button } from "@apollo/space-kit/Button";
 import { colors } from "@apollo/space-kit/colors";
 import { Action } from "./App";
@@ -17,27 +11,30 @@ type Props = {
 
 // TODO: Refactor into separate file some day
 const FileUploadZone = function ({ dispatch }: Props) {
-  const onDrop = useCallback((acceptedFiles) => {
-    acceptedFiles.forEach((file: FileWithPath) => {
-      const reader = new FileReader();
-      // We have to use a FileReader to get the contents of the file
-      reader.onabort = () => console.warn("file reading was aborted");
-      reader.onerror = () => console.warn("file reading has failed");
-      reader.onload = () => {
-        const textString = "" + reader.result;
-        console.log(textString?.toString());
-        // Try to load
-        dispatch({ type: "loadWorkbench", payload: textString });
-        dispatch({ type: "refreshComposition" });
-      };
-      reader.readAsText(file);
-    });
-  }, []);
+  const onDrop = useCallback(
+    (acceptedFiles) => {
+      acceptedFiles.forEach((file: FileWithPath) => {
+        const reader = new FileReader();
+        // We have to use a FileReader to get the contents of the file
+        reader.onabort = () => console.warn("file reading was aborted");
+        reader.onerror = () => console.warn("file reading has failed");
+        reader.onload = () => {
+          const textString = "" + reader.result;
+          console.log(textString?.toString());
+          // Try to load
+          dispatch({ type: "loadWorkbench", payload: textString });
+          dispatch({ type: "refreshComposition" });
+        };
+        reader.readAsText(file);
+      });
+    },
+    [dispatch]
+  );
   const { getRootProps, getInputProps } = useDropzone({
     accept: ".federationworkbench",
     onDrop,
   });
-  
+
   return (
     <section className="dropzone-container">
       <div {...getRootProps({ className: "dropzone-item" })}>
