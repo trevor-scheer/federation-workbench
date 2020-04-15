@@ -23,14 +23,6 @@ import "./App.css";
 import { client } from "./client";
 import SaveAndLoad from "./SaveAndLoad";
 
-interface WorkerCompositionResult {
-  composition: {
-    schema: GraphQLSchema | undefined;
-    printed: string;
-  };
-  compositionErrors?: GraphQLError[] | undefined;
-}
-
 export type Action =
   | { type: "addService"; payload: { name: string } }
   | { type: "selectService"; payload: string }
@@ -50,7 +42,6 @@ export type State = {
   query: string | undefined;
   queryPlan: string;
   compositionErrors?: GraphQLError[] | undefined;
-  compositionBusy: boolean;
 };
 
 const reducer: Reducer<State, Action> = (state, action) => {
@@ -167,7 +158,6 @@ function App() {
     },
     query: "",
     queryPlan: "",
-    compositionBusy: false,
   });
   // Separated during debug for clarity
   const { services, selectedService, composition, query, queryPlan } = appState;
