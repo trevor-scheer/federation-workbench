@@ -65,6 +65,7 @@ export default function LoadFromAgm({ dispatch }: Props) {
       } of sdlResponse.data.me.implementingServices.services) {
         dispatch({ type: "addService", payload: { name } });
         dispatch({ type: "updateService", payload: { name, value: sdl } });
+        dispatch({ type: "refreshComposition"});
       }
     }
   }, [sdlResponse]);

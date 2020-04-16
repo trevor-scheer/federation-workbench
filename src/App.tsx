@@ -1,6 +1,6 @@
 import React, { useReducer, Reducer } from "react";
 import gql from "graphql-tag";
-import { GraphQLSchema } from "graphql";
+import { GraphQLSchema, GraphQLError } from "graphql";
 import {
   composeAndValidate,
   printSchema,
@@ -21,14 +21,18 @@ import LoadFromAgm from "./LoadFromAgm";
 
 import "./App.css";
 import { client } from "./client";
+import SaveAndLoad from "./SaveAndLoad";
 
 export type Action =
   | { type: "addService"; payload: { name: string } }
   | { type: "selectService"; payload: string }
   | { type: "updateService"; payload: { name: string; value: string } }
-  | { type: "updateQuery"; payload: string };
+  | { type: "updateQuery"; payload: string }
+  | { type: "loadWorkbench"; payload: string | undefined }
+  | { type: "refreshComposition" }
+;
 
-type State = {
+export type State = {
   services: { [name: string]: string };
   selectedService: string | undefined;
   composition: {
@@ -37,20 +41,23 @@ type State = {
   };
   query: string | undefined;
   queryPlan: string;
+  compositionErrors?: GraphQLError[] | undefined;
 };
 
 const reducer: Reducer<State, Action> = (state, action) => {
   switch (action.type) {
     case "addService": {
+      // Exit on blank-ish service name (EMOJIIS WORK, THOUGH 👍)
+      if (action.payload.name.trim().length === 0) return state;
       const selectedService = state.selectedService || action.payload.name;
-      return {
-        ...state,
-        selectedService,
-        services: {
-          ...state.services,
-          [action.payload.name]: "",
-        },
-      };
+        return {
+          ...state,
+          selectedService,
+          services: {
+            ...state.services,
+            [action.payload.name.trim()]: "",
+          },
+        };
     }
     case "selectService": {
       return {
@@ -58,19 +65,11 @@ const reducer: Reducer<State, Action> = (state, action) => {
         selectedService: action.payload,
       };
     }
-    case "updateService": {
+    case "refreshComposition": {
       let composition = state.composition;
-
-      const nextState = {
-        ...state,
-        services: {
-          ...state.services,
-          [action.payload.name]: action.payload.value,
-        },
-      };
-
+      let compositionErrors: GraphQLError[] | undefined = undefined;
       try {
-        const sdls = Object.entries(nextState.services).reduce(
+        const sdls = Object.entries(state.services).reduce(
           (serviceDefs, [name, typeDefs]) => {
             serviceDefs.push({ name, typeDefs: gql(typeDefs) });
             return serviceDefs;
@@ -82,11 +81,25 @@ const reducer: Reducer<State, Action> = (state, action) => {
           schema,
           printed: printSchema(schema),
         };
+        // TODO: Handle these in the UI
+        if (errors && errors.length) compositionErrors = errors;
       } catch {}
 
       return {
-        ...nextState,
+        ...state,
         composition,
+        compositionErrors,
+      };
+    }
+    case "updateService": {
+      // let composition = state.composition;
+
+      return {
+        ...state,
+        services: {
+          ...state.services,
+          [action.payload.name]: action.payload.value,
+        },
       };
     }
     case "updateQuery": {
@@ -116,14 +129,27 @@ const reducer: Reducer<State, Action> = (state, action) => {
         queryPlan,
       };
     }
+    case "loadWorkbench": {
+      // TODO alert on invalid file
+      if (!action.payload || action.payload.toString().length === 0)
+        return state;
+      let hopefullyValidState: State | string = "";
+      try {
+        hopefullyValidState = JSON.parse(action.payload) as State;
+      } catch (e) {
+        alert(`Unable to load Workbench due to ${e}`);
+        console.error(e);
+        return state;
+      }
+      // Okay, we have a serializeable Redux store.
+
+      return { ...state, ...hopefullyValidState };
+    }
   }
 };
 
 function App() {
-  const [
-    { services, selectedService, composition, query, queryPlan },
-    dispatch,
-  ] = useReducer<typeof reducer>(reducer, {
+  const [appState, dispatch] = useReducer<typeof reducer>(reducer, {
     services: {},
     selectedService: undefined,
     composition: {
@@ -133,6 +159,8 @@ function App() {
     query: "",
     queryPlan: "",
   });
+  // Separated during debug for clarity
+  const { services, selectedService, composition, query, queryPlan } = appState;
 
   return (
     <ApolloProvider client={client}>
@@ -153,12 +181,16 @@ function App() {
             }}
           >
             <LoadFromAgm dispatch={dispatch} />
+            <hr />
             <AddServiceForm dispatch={dispatch} />
+            <hr />
             <ServiceSelectors
               dispatch={dispatch}
               services={services}
               shouldShowComposition={!!composition.printed}
             />
+            <hr />
+            <SaveAndLoad dispatch={dispatch} appState={appState} />
           </div>
           <ServiceEditors
             selectedService={selectedService}

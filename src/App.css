@@ -1,1 +1,19 @@
 
+body {
+    background-color: black;    
+}
+
+.App {
+    background-color: black;
+}
+
+.App h3 {
+    color: white;
+    padding: 0 2em;
+}
+
+.App hr {
+    display: block;
+    width: 100%;
+    margin: 1em 0;
+}

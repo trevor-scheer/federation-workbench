@@ -1,0 +1,43 @@
+.SaveAndLoad-form {
+  margin-bottom: 10px;
+}
+
+.SaveAndLoad-label {
+  color: #ffffff;
+}
+
+.dropzone-container {
+  display: block;
+  outline-style: dashed;
+  outline-color: #dddddd;
+  color: #dddddd;
+  font-family: "Source Sans Pro", sans-serif;
+  font-size: 13px;
+  padding: 1em;
+  margin: 1em 0;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+}
+
+.dropzone-item {
+  flex: 1;
+}
+
+/* Mostly taken from the input styles from space-kit's TextField input*/
+.SaveAndLoad-input {
+  background-color: #ffffff;
+  border: solid 1px;
+  border-color: #cad0d8;
+  border-radius: 4px;
+  box-sizing: border-box;
+  -webkit-flex: 1;
+  -ms-flex: 1;
+  flex: 1;
+  height: 28px;
+  font-family: "Source Sans Pro", sans-serif;
+  font-size: 13px;
+  line-height: 1.54;
+  margin: 10px 0;
+  width: 100%;
+}
