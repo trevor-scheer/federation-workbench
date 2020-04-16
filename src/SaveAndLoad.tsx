@@ -1,10 +1,4 @@
-import React, {
-  useState,
-  Dispatch,
-  useCallback,
-  FunctionComponent,
-  Component,
-} from "react";
+import React, { useState, Dispatch, useCallback } from "react";
 import { Button } from "@apollo/space-kit/Button";
 import { colors } from "@apollo/space-kit/colors";
 import { Action, State } from "./App";

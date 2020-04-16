@@ -9,15 +9,25 @@ type Props = {
   dispatch: Dispatch<Action>;
 };
 
-const variantsQuery = gql`
-  query TrevorDoingStuff {
+const graphSelectQuery = gql`
+  query GraphSelectQuery {
     me {
-      ... on Service {
-        createdAt
-        schemaTags {
-          variant {
-            name
+      id
+      ... on User {
+        memberships {
+          account {
             id
+            name
+            services {
+              id
+              name
+              schemaTags {
+                variant {
+                  id
+                  name
+                }
+              }
+            }
           }
         }
       }
@@ -26,16 +36,14 @@ const variantsQuery = gql`
 `;
 
 const partialSdlQuery = gql`
-  query Trevor2($graphVariant: String!) {
-    me {
-      ... on Service {
-        implementingServices(graphVariant: $graphVariant) {
-          ... on FederatedImplementingServices {
-            services {
-              name
-              activePartialSchema {
-                sdl
-              }
+  query PartialSdlQuery($serviceId: ID!, $graphVariant: String!) {
+    service(id: $serviceId) {
+      implementingServices(graphVariant: $graphVariant) {
+        ... on FederatedImplementingServices {
+          services {
+            name
+            activePartialSchema {
+              sdl
             }
           }
         }
@@ -47,28 +55,37 @@ const partialSdlQuery = gql`
 export default function LoadFromAgm({ dispatch }: Props) {
   const [apiKey, updateApiKey] = useState("");
 
-  useEffect(() => {
-    const keyFromStorage = localStorage.getItem("workbenchApiKey");
-    if (keyFromStorage) updateApiKey(keyFromStorage);
-  }, []);
-
-  const [sendVariantsQuery, variantResponse] = useLazyQuery(variantsQuery);
+  const [sendGraphsQuery, { loading, data: graphs }] = useLazyQuery(
+    graphSelectQuery
+  );
   const [sendPartialSdlQuery, sdlResponse] = useLazyQuery(partialSdlQuery);
 
   useEffect(() => {
-    console.log("effect!");
-    if (sdlResponse.data) {
-      console.log(sdlResponse.data);
-      for (const {
-        name,
-        activePartialSchema: { sdl },
-      } of sdlResponse.data.me.implementingServices.services) {
-        dispatch({ type: "addService", payload: { name } });
-        dispatch({ type: "updateService", payload: { name, value: sdl } });
-        dispatch({ type: "refreshComposition"});
-      }
+    const keyFromStorage = localStorage.getItem("workbenchApiKey");
+    if (keyFromStorage) {
+      updateApiKey(keyFromStorage);
     }
-  }, [sdlResponse]);
+    sendGraphsQuery();
+  }, [sendGraphsQuery]);
+
+  useEffect(() => {
+    if (sdlResponse.data?.service.implementingServices) {
+      dispatch({
+        type: "loadFromAGM",
+        payload: {
+          services: Object.fromEntries(
+            sdlResponse.data?.service.implementingServices.services.map(
+              (service: {
+                name: string;
+                activePartialSchema: { sdl: string };
+              }) => [service.name, service.activePartialSchema.sdl]
+            )
+          ),
+        },
+      });
+      dispatch({ type: "refreshComposition" });
+    }
+  }, [dispatch, sdlResponse]);
 
   return (
     <>
@@ -77,14 +94,14 @@ export default function LoadFromAgm({ dispatch }: Props) {
         onSubmit={(e) => {
           e.preventDefault();
           localStorage.setItem("workbenchApiKey", apiKey);
-          sendVariantsQuery();
+          sendGraphsQuery();
         }}
       >
         <label className="LoadFromAgm-label">
-          Service API Key
+          User API Key
           <input
             className="LoadFromAgm-input"
-            placeholder="service:xyz"
+            placeholder="user:xyz"
             onChange={(e) => updateApiKey(e.target.value)}
             value={apiKey}
           />
@@ -93,21 +110,28 @@ export default function LoadFromAgm({ dispatch }: Props) {
           Load from AGM
         </Button>
       </form>
-      {!variantResponse.loading && variantResponse.data?.me && (
+      {!loading && graphs && (
         <select
           onChange={(e) => {
-            console.log("change", e.target.value);
-            sendPartialSdlQuery({
-              variables: { graphVariant: e.target.value },
-            });
+            const [serviceId, graphVariant] = e.target.value.split(",");
+            sendPartialSdlQuery({ variables: { serviceId, graphVariant } });
           }}
         >
-          <option value="">select a variant</option>
-          {variantResponse.data.me.schemaTags.map(({ variant }: any) => (
-            <option value={variant.name} key={variant.id}>
-              {variant.name}
-            </option>
-          ))}
+          <option value="">select a graph</option>
+          {graphs.me.memberships.map((membership: any) =>
+            membership.account.services.map((service: any) => (
+              <optgroup label={service.name} key={service.id}>
+                {service.schemaTags.map((schemaTag: any) => (
+                  <option
+                    key={`${service.name}@${schemaTag.variant.name}`}
+                    value={[service.name, schemaTag.variant.name]}
+                  >
+                    {schemaTag.variant.name}
+                  </option>
+                ))}
+              </optgroup>
+            ))
+          )}
         </select>
       )}
     </>

@@ -30,7 +30,7 @@ export type Action =
   | { type: "updateQuery"; payload: string }
   | { type: "loadWorkbench"; payload: string | undefined }
   | { type: "refreshComposition" }
-;
+  | { type: "loadFromAGM"; payload: { services: { [name: string]: string } } };
 
 export type State = {
   services: { [name: string]: string };
@@ -50,14 +50,14 @@ const reducer: Reducer<State, Action> = (state, action) => {
       // Exit on blank-ish service name (EMOJIIS WORK, THOUGH 👍)
       if (action.payload.name.trim().length === 0) return state;
       const selectedService = state.selectedService || action.payload.name;
-        return {
-          ...state,
-          selectedService,
-          services: {
-            ...state.services,
-            [action.payload.name.trim()]: "",
-          },
-        };
+      return {
+        ...state,
+        selectedService,
+        services: {
+          ...state.services,
+          [action.payload.name.trim()]: "",
+        },
+      };
     }
     case "selectService": {
       return {
@@ -144,6 +144,15 @@ const reducer: Reducer<State, Action> = (state, action) => {
       // Okay, we have a serializeable Redux store.
 
       return { ...state, ...hopefullyValidState };
+    }
+    case "loadFromAGM": {
+      return {
+        ...state,
+        query: undefined,
+        queryPlan: "",
+        selectedService: undefined,
+        services: action.payload.services,
+      };
     }
   }
 };

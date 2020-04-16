@@ -2,7 +2,7 @@ import React, { Dispatch } from "react";
 import { ControlledEditor,  } from "@monaco-editor/react";
 import { Action } from "../App";
 import "./ServiceEditors.css";
-import {debounce} from "../utils/debounce";
+import { debounce } from "../utils/debounce";
 
 type Props = {
   dispatch: Dispatch<Action>;
@@ -10,10 +10,6 @@ type Props = {
   selectedService: string | undefined;
   composition: string | undefined;
 };
-
-// function handleEditorDidMount(_: any, editor) {
-//   editor.updateOptions({ readOnly: true });
-// }
 
 const updateService = debounce((dispatch: Dispatch<Action>, e: Event, name: string, value: any) => {
   console.log("Updating service...");
@@ -33,9 +29,6 @@ export default function ServiceEditors({
   selectedService,
   composition,
 }: Props) {
-
-  
-
   return (
     <div className="ServiceEditors-editors" style={{ width: "50%" }}>
       {Object.entries(services).map(([name, value]) => (
@@ -69,6 +62,10 @@ export default function ServiceEditors({
           theme="dark"
           language="graphql"
           value={composition}
+          // TODO: this editor should be read-only. For breadcrumbs, the below worked previously.
+          // editorDidMount={(_: any, editor: any) => {
+          //   editor.updateOptions({ readOnly: true });
+          // }}
         />
       </div>
     </div>
