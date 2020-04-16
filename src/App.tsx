@@ -21,28 +21,18 @@ import LoadFromAgm from "./LoadFromAgm";
 
 import "./App.css";
 import { client } from "./client";
-import FileSaver from "file-saver";
 import SaveAndLoad from "./SaveAndLoad";
-
-interface WorkerCompositionResult {
-  composition: {
-    schema: GraphQLSchema | undefined;
-    printed: string;
-  };
-  compositionErrors?: GraphQLError[] | undefined;
-}
 
 export type Action =
   | { type: "addService"; payload: { name: string } }
   | { type: "selectService"; payload: string }
   | { type: "updateService"; payload: { name: string; value: string } }
   | { type: "updateQuery"; payload: string }
-  | { type: "saveWorkbench"; payload: string | undefined }
   | { type: "loadWorkbench"; payload: string | undefined }
   | { type: "refreshComposition" }
   | { type: "loadFromAGM"; payload: { services: { [name: string]: string } } };
 
-type State = {
+export type State = {
   services: { [name: string]: string };
   selectedService: string | undefined;
   composition: {
@@ -52,7 +42,6 @@ type State = {
   query: string | undefined;
   queryPlan: string;
   compositionErrors?: GraphQLError[] | undefined;
-  compositionBusy: boolean;
 };
 
 const reducer: Reducer<State, Action> = (state, action) => {
@@ -140,27 +129,6 @@ const reducer: Reducer<State, Action> = (state, action) => {
         queryPlan,
       };
     }
-    case "saveWorkbench": {
-      let serializedState = "";
-      try {
-        serializedState = JSON.stringify(state);
-      } catch (e) {
-        alert(`Unable to save Workbench due to ${e}`);
-        console.error(e);
-        return state;
-      }
-      // Okay, we have a serializeable Redux store.
-      const blob = new Blob([serializedState], {
-        type: "text/plain;charset=utf-8",
-      });
-      FileSaver.saveAs(
-        blob,
-        `${
-          (action.payload ? action.payload : "Workbench") + "-" + Date.now()
-        }.federationworkbench`
-      );
-      return state;
-    }
     case "loadWorkbench": {
       // TODO alert on invalid file
       if (!action.payload || action.payload.toString().length === 0)
@@ -199,7 +167,6 @@ function App() {
     },
     query: "",
     queryPlan: "",
-    compositionBusy: false,
   });
   // Separated during debug for clarity
   const { services, selectedService, composition, query, queryPlan } = appState;
@@ -232,7 +199,7 @@ function App() {
               shouldShowComposition={!!composition.printed}
             />
             <hr />
-            <SaveAndLoad dispatch={dispatch} />
+            <SaveAndLoad dispatch={dispatch} appState={appState} />
           </div>
           <ServiceEditors
             selectedService={selectedService}

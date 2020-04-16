@@ -1,16 +1,22 @@
 import React, { useState, Dispatch, useCallback } from "react";
 import { Button } from "@apollo/space-kit/Button";
 import { colors } from "@apollo/space-kit/colors";
-import { Action } from "./App";
+import { Action, State } from "./App";
 import { useDropzone, FileWithPath } from "react-dropzone";
 import "./SaveAndLoad.css";
+import FileSaver from "file-saver";
 
 type Props = {
   dispatch: Dispatch<Action>;
+  appState: State;
 };
 
+type FileUploadZoneProps = {
+  dispatch: Dispatch<Action>;
+}
+
 // TODO: Refactor into separate file some day
-const FileUploadZone = function ({ dispatch }: Props) {
+const FileUploadZone = function ({ dispatch }: FileUploadZoneProps) {
   const onDrop = useCallback(
     (acceptedFiles) => {
       acceptedFiles.forEach((file: FileWithPath) => {
@@ -45,7 +51,27 @@ const FileUploadZone = function ({ dispatch }: Props) {
   );
 };
 
-export default function SaveAndLoad({ dispatch }: Props) {
+const saveState = (fileName: string, stateToSave: State) => {
+  let serializedState = "";
+  try {
+    serializedState = JSON.stringify(stateToSave);
+  } catch (e) {
+    alert(`Unable to save Workbench due to ${e}`);
+    console.error(e);
+  }
+  // Okay, we have a serializeable Redux store.
+  const blob = new Blob([serializedState], {
+    type: "text/plain;charset=utf-8",
+  });
+  FileSaver.saveAs(
+    blob,
+    `${
+      (fileName ? fileName : "Workbench") + "-" + Date.now()
+    }.federationworkbench`
+  );
+};
+
+export default function SaveAndLoad({ dispatch, appState }: Props) {
   const [fileName, updateFileName] = useState("");
 
   return (
@@ -54,11 +80,7 @@ export default function SaveAndLoad({ dispatch }: Props) {
         className="SaveAndLoad-form"
         onSubmit={(e) => {
           e.preventDefault();
-          dispatch({
-            type: "saveWorkbench",
-            payload: fileName,
-          });
-          updateFileName("");
+          saveState(fileName, appState);
         }}
       >
         <label className="SaveAndLoad-label">
