@@ -134,6 +134,7 @@ const reducer: Reducer<State, Action> = (state, action) => {
     case "updateQuery": {
       let queryPlan = "";
       let queryAST;
+      let queryErrors: GraphQLError[] | undefined;
 
       try {
         queryAST = gql(action.payload);
@@ -155,6 +156,7 @@ const reducer: Reducer<State, Action> = (state, action) => {
         } catch (queryPlanException) {
           console.error("[Query Plan Exception]");
           console.dir(queryPlanException);
+          queryErrors = [queryPlanException]
         }
       }
 
@@ -162,6 +164,7 @@ const reducer: Reducer<State, Action> = (state, action) => {
         ...state,
         query: action.payload,
         queryPlan,
+        compositionErrors: queryErrors
       };
     }
     case "loadWorkbench": {
