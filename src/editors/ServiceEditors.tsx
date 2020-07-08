@@ -1,5 +1,5 @@
 import React, { Dispatch } from "react";
-import { ControlledEditor,  } from "@monaco-editor/react";
+import { ControlledEditor } from "@monaco-editor/react";
 import { Action } from "../App";
 import "./ServiceEditors.css";
 import { debounce } from "../utils/debounce";
@@ -17,7 +17,7 @@ const updateService = debounce((dispatch: Dispatch<Action>, e: Event, name: stri
     type: "updateService",
     payload: { name, value: value || "" },
   });
-  //TODO: Debounce within Debounce? 🤔
+  //TODO: Debounce within Debounce? 🤔🦖
   dispatch({
     type: 'refreshComposition'
   })
@@ -29,7 +29,9 @@ export default function ServiceEditors({
   selectedService,
   composition,
 }: Props) {
+
   return (
+
     <div className="ServiceEditors-editors" style={{ width: "50%" }}>
       {Object.entries(services).map(([name, value]) => (
         <div
@@ -45,6 +47,10 @@ export default function ServiceEditors({
             value={value}
             onChange={(e, value) => {
               updateService(dispatch, e, name, value);
+            }}
+            editorDidMount={ (_, editor) => {
+              console.dir(_);
+              console.dir(editor);
             }}
             language="graphql"
           />
