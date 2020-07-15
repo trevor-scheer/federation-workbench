@@ -1,8 +1,9 @@
-import React, { useReducer, Reducer } from "react";
+import React, { useReducer, Reducer, Fragment } from "react";
 import gql from "graphql-tag";
 import { GraphQLSchema, GraphQLError } from "graphql";
 import {
-  composeAndValidate,
+  // composeAndValidate,
+  composeServices,
   printSchema,
   ServiceDefinition,
 } from "@apollo/federation";
@@ -76,14 +77,42 @@ const reducer: Reducer<State, Action> = (state, action) => {
           },
           [] as ServiceDefinition[]
         );
-        const { schema, errors } = composeAndValidate(sdls);
+        const { schema, errors } = composeServices(sdls);
         composition = {
           schema,
           printed: printSchema(schema),
         };
         // TODO: Handle these in the UI
-        if (errors && errors.length) compositionErrors = errors;
-      } catch {}
+        // if (warnings && warnings.length) {
+        //   console.warn("[Composition Warnings]");
+        //   console.dir(warnings);
+        //   composition = {
+        //     schema: undefined,
+        //     printed: "",
+        //   };
+        // }
+        if (errors && errors.length) {
+          compositionErrors = errors;
+          console.error("[Composition Errors]");
+          console.dir(errors);
+          composition = {
+            schema: undefined,
+            printed: "",
+          };
+        }
+      } catch (compositionException) {
+        console.error("[Composition Exception]", compositionException instanceof GraphQLError);
+        console.dir(compositionException);
+        composition = {
+          schema: undefined,
+          printed: "",
+        };
+        if (compositionException instanceof GraphQLError) {
+          compositionErrors = [compositionException];
+        } else {
+          compositionErrors = [new GraphQLError( compositionException.message)];
+        }
+      }
 
       return {
         ...state,
@@ -105,10 +134,14 @@ const reducer: Reducer<State, Action> = (state, action) => {
     case "updateQuery": {
       let queryPlan = "";
       let queryAST;
+      let queryErrors: GraphQLError[] | undefined;
 
       try {
         queryAST = gql(action.payload);
-      } catch {}
+      } catch (queryASTException) {
+        console.error("[Query Exception]");
+        console.dir(queryASTException);
+      }
 
       if (queryAST && state.composition.schema) {
         const context = buildOperationContext(
@@ -120,13 +153,18 @@ const reducer: Reducer<State, Action> = (state, action) => {
           if (queryPlanAST) {
             queryPlan = serializeQueryPlan(queryPlanAST);
           }
-        } catch {}
+        } catch (queryPlanException) {
+          console.error("[Query Plan Exception]");
+          console.dir(queryPlanException);
+          queryErrors = [queryPlanException]
+        }
       }
 
       return {
         ...state,
         query: action.payload,
         queryPlan,
+        compositionErrors: queryErrors
       };
     }
     case "loadWorkbench": {
@@ -175,8 +213,28 @@ function App() {
     <ApolloProvider client={client}>
       <div className="App">
         <div
+          className="status-bar"
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            height: "10vh",
+            color: "white",
+          }}
+        >
+          {appState.compositionErrors?.map((item) => (
+            <Fragment>
+              <p>
+                {item.message} on{" "}
+                {item.locations
+                  ?.map((location) => `line ${location.line || "unknown"}, col ${location.column || "unknown"}`)
+                  .join(",")}
+              </p>
+            </Fragment>
+          ))}
+        </div>
+        <div
           className="App-root"
-          style={{ display: "flex", flexDirection: "row", height: "100vh" }}
+          style={{ display: "flex", flexDirection: "row", height: "90vh" }}
         >
           <div
             className="App-serviceSelector monaco-editor-background"

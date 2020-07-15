@@ -5,6 +5,7 @@ body {
 
 .App {
     background-color: black;
+    flex: 1;
 }
 
 .App h3 {
